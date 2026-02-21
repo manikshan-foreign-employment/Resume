@@ -511,6 +511,7 @@
             // J1 Information
             fullName: `${document.getElementById('firstName').value} ${document.getElementById('middleName').value ? document.getElementById('middleName').value + ' ' : ''}${document.getElementById('lastName').value}`,
             firstName: document.getElementById('firstName').value,
+            middleName: document.getElementById('middleName').value,
             lastName: document.getElementById('lastName').value,
             nickname: document.getElementById('nickname').value,
             nationality: document.getElementById('nationality').value,
@@ -604,12 +605,19 @@
         yPos += 10;
         
         doc.setFontSize(10).setFont(undefined, 'normal').setTextColor('#475569'); // Slate 600
-        doc.text(`Name: ${data.fullName}`, marginX, yPos);
-        doc.text(`Email: ${data.email}`, marginX + contentWidth * 0.4, yPos);
-        doc.text(`Phone: ${data.phone}`, marginX + contentWidth * 0.75, yPos);
+        
+        // Changed part: Separated names
+        doc.text(`First Name: ${data.firstName}`, marginX, yPos);
+        doc.text(`Middle Name: ${data.middleName || 'N/A'}`, marginX + contentWidth * 0.35, yPos);
+        doc.text(`Last Name: ${data.lastName}`, marginX + contentWidth * 0.70, yPos);
         yPos += lineHeight;
-        doc.text(`Skype ID: ${data.skype || 'N/A'}`, marginX, yPos);
-        doc.text(`J1 Interest: ${data.j1Training || 'N/A'}`, marginX + contentWidth * 0.4, yPos);
+        
+        doc.text(`Email: ${data.email}`, marginX, yPos);
+        doc.text(`Phone: ${data.phone}`, marginX + contentWidth * 0.35, yPos);
+        doc.text(`Skype ID: ${data.skype || 'N/A'}`, marginX + contentWidth * 0.70, yPos);
+        yPos += lineHeight;
+        
+        doc.text(`J1 Interest: ${data.j1Training || 'N/A'}`, marginX, yPos);
         yPos += lineHeight * 2;
         
         // --- J1 INFORMATION ---
