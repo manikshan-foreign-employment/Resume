@@ -565,7 +565,7 @@
         if (!dateString) return 'Present';
         try {
             const date = new Date(dateString);
-            if (isNaN(date)) return dateString; // Return as is if invalid date format, might be a custom text like "2016 (A/L)"
+            if (isNaN(date)) return dateString; // Return as is if invalid date format
             return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
         } catch (e) {
             return dateString;
@@ -573,205 +573,176 @@
     };
 
 
+    // --- ALUTHEN HADAPU PDF GENERATOR EKA ---
     function generatePDF() {
         const data = getData();
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
         
-        let yPos = 15;
+        let yPos = 20;
         const marginX = 15;
         const docWidth = doc.internal.pageSize.getWidth();
         const contentWidth = docWidth - (2 * marginX);
-        const lineHeight = 5;
+        const lineHeight = 6;
 
-        // Helper function for adding titles
-        const addTitle = (text, size, color, style = 'bold') => {
-            doc.setFontSize(size).setFont(undefined, style).setTextColor(color);
-            doc.text(text, marginX, yPos);
-            yPos += lineHeight * 1.5;
-        };
-
-        // Helper function for page breaks
+        // Page break checker eka
         const checkPageBreak = (spaceNeeded) => {
             if (yPos + spaceNeeded > doc.internal.pageSize.getHeight() - 15) {
                 doc.addPage();
-                yPos = 15;
+                yPos = 20;
             }
         };
 
-        // --- Header and Contact Info ---
-        doc.setFontSize(22).setFont(undefined, 'bold').setTextColor('#3730a3'); // Indigo 700
+        // Main Title
+        doc.setFontSize(18).setFont(undefined, 'bold').setTextColor('#3730a3');
         doc.text("ManikShan Foreign Employment RESUME", docWidth / 2, yPos, { align: 'center' });
-        yPos += 10;
-        
-        doc.setFontSize(10).setFont(undefined, 'normal').setTextColor('#475569'); // Slate 600
-        
-        // Changed part: Separated names
-        doc.text(`First Name: ${data.firstName}`, marginX, yPos);
-        doc.text(`Middle Name: ${data.middleName || 'N/A'}`, marginX + contentWidth * 0.35, yPos);
-        doc.text(`Last Name: ${data.lastName}`, marginX + contentWidth * 0.70, yPos);
-        yPos += lineHeight;
-        
-        doc.text(`Email: ${data.email}`, marginX, yPos);
-        doc.text(`Phone: ${data.phone}`, marginX + contentWidth * 0.35, yPos);
-        doc.text(`Skype ID: ${data.skype || 'N/A'}`, marginX + contentWidth * 0.70, yPos);
-        yPos += lineHeight;
-        
-        doc.text(`J1 Interest: ${data.j1Training || 'N/A'}`, marginX, yPos);
-        yPos += lineHeight * 2;
-        
-        // --- J1 INFORMATION ---
-        checkPageBreak(35);
-        addTitle("1. J1 INFORMATION", 16, '#1e40af'); // Blue 800
-        doc.setLineWidth(0.5).setDrawColor('#93c5fd').line(marginX, yPos - 5, docWidth - marginX, yPos - 5);
-        doc.setFontSize(10).setTextColor('#000000').setFont(undefined, 'normal');
+        yPos += 12;
 
-        const j1Details = [
-            `Nationality: ${data.nationality}`,
-            `DOB: ${formatDate(data.dob)}`,
-            `Birthplace: ${data.birthplace}`,
-            `Residence: ${data.residence}`,
-            `Marital Status: ${data.maritalStatus}`,
-            `Gender: ${data.gender}`
-        ];
-        
-        let col1Y = yPos;
-        let col2Y = yPos;
-        j1Details.forEach((detail, index) => {
-            if (index % 2 === 0) {
-                doc.text(detail, marginX, col1Y);
-                col1Y += lineHeight;
-            } else {
-                doc.text(detail, marginX + contentWidth * 0.5, col2Y);
-                col2Y += lineHeight;
-            }
-        });
-        yPos = Math.max(col1Y, col2Y) + 5;
+        const addSectionTitle = (title) => {
+            checkPageBreak(15);
+            doc.setFontSize(14).setFont(undefined, 'bold').setTextColor('#1e40af');
+            doc.text(title, marginX, yPos);
+            yPos += 2;
+            doc.setLineWidth(0.5).setDrawColor('#93c5fd').line(marginX, yPos, docWidth - marginX, yPos);
+            yPos += 8;
+        };
 
-
-        // --- EDUCATION ---
-        checkPageBreak(50);
-        addTitle("2. EDUCATION (Most Recent First)", 16, '#1e40af'); // Blue 800
-        doc.setLineWidth(0.5).setDrawColor('#93c5fd').line(marginX, yPos - 5, docWidth - marginX, yPos - 5);
-        
-        data.education.forEach(edu => {
-            if (!edu.school) return;
-            checkPageBreak(35);
+        // Table wage formatt ekata Label saha Value print karanna (eka uda eka yanne natiwa)
+        const addRow = (label, value) => {
+            checkPageBreak(10);
+            doc.setFontSize(10).setFont(undefined, 'bold').setTextColor('#1f2937');
+            doc.text(label + " :", marginX, yPos);
             
-            // School Name and Dates
-            doc.setFontSize(11).setFont(undefined, 'bold').setTextColor('#000000');
-            doc.text(`${edu.school}`, marginX, yPos);
-            doc.setFontSize(10).setFont(undefined, 'normal').setTextColor('#475569');
-            doc.text(`${formatDate(edu.start)} - ${formatDate(edu.end)}`, marginX + contentWidth * 0.5, yPos);
+            doc.setFont(undefined, 'normal').setTextColor('#475569');
+            let displayValue = value ? String(value).trim() : 'N/A';
+            if(displayValue === '') displayValue = 'N/A';
+            
+            // Label ekata ida thiyala ithuru kotasata value eka danawa
+            let splitValue = doc.splitTextToSize(displayValue, contentWidth - 65);
+            doc.text(splitValue, marginX + 65, yPos);
+            
+            // Text eke digata anukuwa Y position eka update wenawa
+            yPos += (splitValue.length * lineHeight) + 2;
+        };
+
+        // Digama texts (Skills, Languages) walata
+        const addFullText = (label, value) => {
+            checkPageBreak(15);
+            doc.setFontSize(10).setFont(undefined, 'bold').setTextColor('#1f2937');
+            doc.text(label + " :", marginX, yPos);
             yPos += lineHeight;
+            
+            doc.setFont(undefined, 'normal').setTextColor('#475569');
+            let displayValue = value ? String(value).trim() : 'N/A';
+            if(displayValue === '') displayValue = 'N/A';
+            
+            let splitValue = doc.splitTextToSize(displayValue, contentWidth);
+            doc.text(splitValue, marginX, yPos);
+            yPos += (splitValue.length * lineHeight) + 4;
+        };
+        
+        const addSubHeader = (text) => {
+             checkPageBreak(12);
+             yPos += 4;
+             doc.setFontSize(11).setFont(undefined, 'bold').setTextColor('#000000');
+             doc.text(text, marginX, yPos);
+             yPos += lineHeight + 2;
+        };
 
-            // Degree/Major
-            doc.setFontSize(10).setFont(undefined, 'italic').setTextColor('#1f2937'); // Gray 800
-            const degreeInfo = `${edu.degree}${edu.degree && edu.major ? ' | ' : ''}${edu.major}`;
-            doc.text(degreeInfo, marginX, yPos);
-            yPos += lineHeight * 0.8;
-            
-            // Location and Website
-            doc.setFontSize(10).setFont(undefined, 'normal').setTextColor('#475569');
-            doc.text(`Location: ${edu.location || 'N/A'}`, marginX, yPos);
-            doc.text(`Website: ${edu.website || 'N/A'}`, marginX + contentWidth * 0.5, yPos);
-            yPos += lineHeight * 0.8;
-            
-            // Contact Info
-            doc.setFontSize(10).setFont(undefined, 'normal').setTextColor('#475569');
-            doc.text(`Contact: ${edu.contact || 'N/A'}`, marginX, yPos);
-            yPos += lineHeight * 1.5;
-        });
+        // --- 1. J1 INFORMATION ---
+        addSectionTitle("1. J1 INFORMATION");
+        addRow("First Name", data.firstName);
+        addRow("Last Name", data.lastName);
+        addRow("Middle Name", data.middleName);
+        addRow("Nickname", data.nickname);
+        addRow("Nationality", data.nationality);
+        addRow("Birthplace", data.birthplace);
+        addRow("Country of Residence", data.residence);
+        addRow("Date of Birth", formatDate(data.dob));
+        addRow("Email Address", data.email);
+        addRow("Phone Number", data.phone);
+        addRow("Skype ID", data.skype);
+        addRow("J1 Training Interest", data.j1Training);
+        addRow("Marital Status", data.maritalStatus);
+        addRow("Gender", data.gender);
+
         yPos += 5;
 
-        // --- SKILLS ---
-        checkPageBreak(60);
-        addTitle("3. SKILLS AND ADDITIONAL INFORMATION", 16, '#1e40af'); // Blue 800
-        doc.setLineWidth(0.5).setDrawColor('#93c5fd').line(marginX, yPos - 5, docWidth - marginX, yPos - 5);
-        
-        const addSkillBlock = (title, content) => {
-            if (!content) return;
-            checkPageBreak(20);
-            doc.setFontSize(11).setFont(undefined, 'bold').setTextColor('#000000');
-            doc.text(title, marginX, yPos);
-            yPos += lineHeight * 0.7;
-            
-            doc.setFontSize(10).setFont(undefined, 'normal').setTextColor('#475569');
-            const splitContent = doc.splitTextToSize(content, contentWidth);
-            doc.text(splitContent, marginX, yPos);
-            yPos += splitContent.length * lineHeight + 5;
-        };
-
-        addSkillBlock("Computer Skills:", data.computerSkills);
-        addSkillBlock("Hotel Computer Software programs:", data.hotelSoftware);
-        addSkillBlock("Other Languages:", data.otherLanguages);
-        
-        // US Visit
-        checkPageBreak(15);
-        doc.setFontSize(10).setFont(undefined, 'bold').setTextColor('#000000');
-        doc.text(`Visited US: ${data.visitedUS}`, marginX, yPos);
-        if (data.visitedUS === 'Yes' && data.usVisaType) {
-            doc.setFont(undefined, 'normal').setTextColor('#475569');
-            doc.text(`| Visa Type: ${data.usVisaType}`, marginX + contentWidth * 0.25, yPos);
-        }
-        yPos += lineHeight * 2;
-
-
-        // --- PROFESSIONAL EXPERIENCE ---
-        checkPageBreak(30);
-        addTitle("4. PROFESSIONAL EXPERIENCE (MOST RECENT FIRST)", 16, '#1e40af'); // Blue 800
-        doc.setLineWidth(0.5).setDrawColor('#93c5fd').line(marginX, yPos - 5, docWidth - marginX, yPos - 5);
-
-        data.experience.forEach(job => {
-            if (!job.company) return; // Skip empty entries
-            
-            checkPageBreak(50);
-            
-            // Company & Title
-            doc.setFontSize(12).setFont(undefined, 'bold').setTextColor('#000000');
-            doc.text(job.company, marginX, yPos);
-            doc.text(job.title, marginX + contentWidth * 0.5, yPos);
-            yPos += lineHeight * 0.8;
-            
-            // Location, Website, and Dates
-            doc.setFontSize(10).setFont(undefined, 'normal').setTextColor('#475569');
-            doc.text(job.location, marginX, yPos);
-            doc.text(`Website: ${job.website || 'N/A'}`, marginX + contentWidth * 0.5, yPos);
-            yPos += lineHeight;
-
-            doc.text(`Location Detail: ${job.workLocation || 'N/A'}`, marginX, yPos);
-            doc.text(`Dates: ${formatDate(job.start)} - ${formatDate(job.end)}`, marginX + contentWidth * 0.5, yPos);
-            yPos += lineHeight;
-
-            // Contact Info
-            doc.text(`Contact: ${job.contact || 'N/A'}`, marginX, yPos);
-            yPos += lineHeight * 1.5;
-
-
-            // Duties
-            doc.setFontSize(10).setFont(undefined, 'bold').setTextColor('#1f2937');
-            doc.text('Job Duties:', marginX, yPos);
-            
-            doc.setFont(undefined, 'normal').setTextColor('#475569');
-            // Split duties by newline and prepend bullet points
-            const dutiesContentLines = job.duties.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-            
-            let dutyText = [];
-            dutiesContentLines.forEach(line => {
-                const splitLine = doc.splitTextToSize(`• ${line}`, contentWidth);
-                dutyText = dutyText.concat(splitLine);
+        // --- 2. EDUCATION ---
+        addSectionTitle("2. EDUCATION (Most Recent First)");
+        if (data.education.length === 0) {
+            addRow("Education", "N/A");
+        } else {
+            data.education.forEach((edu, index) => {
+                addSubHeader(`Education Entry ${index + 1}`);
+                addRow("University/School Name", edu.school);
+                addRow("Website", edu.website);
+                addRow("Degree/Diploma", edu.degree);
+                addRow("Major Field of Study", edu.major);
+                addRow("Start Date", formatDate(edu.start));
+                addRow("End Date", formatDate(edu.end));
+                addRow("Location", edu.location);
+                addRow("Contact Info", edu.contact);
             });
+        }
+        
+        yPos += 5;
 
-            if (dutyText.length > 0) {
-                    doc.text(dutyText, marginX, yPos + lineHeight * 0.8);
-                    yPos += dutyText.length * lineHeight + 5;
-            } else {
-                    yPos += lineHeight + 5;
-            }
-        });
+        // --- 3. SKILLS ---
+        addSectionTitle("3. SKILLS & ADDITIONAL INFORMATION");
+        addFullText("Computer Skills", data.computerSkills);
+        addFullText("Hotel Software Programs", data.hotelSoftware);
+        addFullText("Other Languages", data.otherLanguages);
+        addRow("Have you visited the US?", data.visitedUS);
+        if (data.visitedUS === 'Yes') {
+            addRow("US Visa Type", data.usVisaType);
+        }
+        
+        yPos += 5;
+
+        // --- 4. EXPERIENCE ---
+        addSectionTitle("4. PROFESSIONAL EXPERIENCE");
+        if (data.experience.length === 0) {
+            addRow("Experience", "N/A");
+        } else {
+            data.experience.forEach((job, index) => {
+                addSubHeader(`Job ${index + 1}`);
+                addRow("Company Name", job.company);
+                addRow("Job Title", job.title);
+                addRow("Company Website", job.website);
+                addRow("City and Country", job.location);
+                addRow("Work Location Details", job.workLocation);
+                addRow("Start Date", formatDate(job.start));
+                addRow("End Date", formatDate(job.end));
+                addRow("Contact Info", job.contact);
+                
+                // Job Duties formatting
+                checkPageBreak(15);
+                doc.setFontSize(10).setFont(undefined, 'bold').setTextColor('#1f2937');
+                doc.text("Job Duties :", marginX, yPos);
+                yPos += lineHeight;
+                
+                doc.setFont(undefined, 'normal').setTextColor('#475569');
+                if (job.duties && job.duties.trim() !== '') {
+                    // Line eken line eka wena kara bullet points add kireema
+                    const lines = job.duties.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    lines.forEach(line => {
+                        let bulletLine = doc.splitTextToSize(`• ${line}`, contentWidth - 5);
+                        checkPageBreak(bulletLine.length * lineHeight);
+                        doc.text(bulletLine, marginX + 5, yPos);
+                        yPos += bulletLine.length * lineHeight + 1;
+                    });
+                } else {
+                    doc.text("N/A", marginX + 5, yPos);
+                    yPos += lineHeight;
+                }
+                yPos += 4;
+            });
+        }
 
         // --- Save PDF ---
-        doc.save(`IRES_Resume_${data.lastName || 'Applicant'}_${data.firstName || 'Resume'}.pdf`);
+        // ManikShan hesarannu thegeduhakiddene
+        doc.save(`Resume_${data.firstName || 'Applicant'}.pdf`);
     }
 
     // Initialize entry counters on load
